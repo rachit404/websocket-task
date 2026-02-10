@@ -10,7 +10,9 @@ export default function ProductList() {
       .get("http://localhost:5000/api/products")
       .then((res) => setProducts(res.data));
 
+    //! Socket Logic
     socket.on("productUpdated", (updatedProduct) => {
+      console.log("Received product update:", updatedProduct);
       setProducts((prev) =>
         prev.map((p) =>
           p._id === updatedProduct._id ? { ...p, ...updatedProduct } : p,
@@ -52,23 +54,34 @@ export default function ProductList() {
                 {p.stock > 0 ? "In Stock" : "Out of Stock"}
               </span>
             </div>
+            <div className="mt-3 bg-gray-50 rounded-lg p-3">
+              <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                <div>
+                  <p className="text-gray-500 text-sm">Price</p>
+                  <p className="font-semibold text-gray-800">₹{p.price}</p>
+                </div>
 
-            <div className="space-y-1 text-gray-600 text-sm">
-              <p>
-                <span className="font-medium">Price:</span> ₹{p.price}
-              </p>
+                <div>
+                  <p className="text-gray-500 text-sm">City</p>
+                  <p className="font-semibold text-gray-800">{p.city}</p>
+                </div>
 
-              <p>
-                <span className="font-medium">MOQ:</span> {p.moq}
-              </p>
+                <div>
+                  <p className="text-gray-500 text-sm">MOQ</p>
+                  <p className="font-semibold text-gray-800">{p.moq}</p>
+                </div>
 
-              <p>
-                <span className="font-medium">City:</span> {p.city}
-              </p>
-
-              <p className="text-base font-semibold text-blue-700">
-                Stock: {p.stock}
-              </p>
+                <div>
+                  <p className="text-gray-500 text-sm">Stock</p>
+                  <p
+                    className={`font-bold ${
+                      p.stock > 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {p.stock}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {p.image && (

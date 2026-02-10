@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
-console.log("Product Routes Loaded");
 import Product from "../models/Product.js";
+console.log("Product Routes Loaded");
 
 const router = express.Router();
 
@@ -17,18 +17,42 @@ const upload = multer({ storage });
 export default (io) => {
   // Create Product
   router.post("/", upload.single("image"), async (req, res) => {
-    const product = new Product({
-      image: req.file.filename,
-      price: req.body.price,
-      moq: req.body.moq,
-      fabric: req.body.fabric,
-      city: req.body.city,
-      stock: req.body.stock,
-    });
+    try {
+      const { price, moq, fabric, city, stock } = req.body;
 
-    await product.save();
+      // Check if similar product already exists
+      const existingProduct = await Product.findOne({
+        price,
+        moq,
+        fabric,
+        city,
+      });
 
-    res.json(product);
+      if (existingProduct) {
+        return res.status(400).json({
+          message: "Product already exists with same details",
+        });
+      }
+
+      // Create new product otherswise
+      const product = new Product({
+        image: req.file.filename,
+        price: req.body.price,
+        moq: req.body.moq,
+        fabric: req.body.fabric,
+        city: req.body.city,
+        stock: req.body.stock,
+      });
+
+      await product.save();
+
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({
+        message: "Server error",
+        error: error.message,
+      });
+    }
   });
 
   // Get All Products

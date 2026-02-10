@@ -1,9 +1,11 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function UploadForm() {
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const formRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,8 +19,14 @@ export default function UploadForm() {
 
     try {
       await axios.post("http://localhost:5000/api/products", data);
-      alert("Product Uploaded Successfully!");
+
       setForm({});
+      formRef.current.reset();
+
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+      }, 5000);
     } catch (error) {
       alert("Error uploading product");
     } finally {
@@ -29,6 +37,7 @@ export default function UploadForm() {
   return (
     <div className="p-6  flex justify-center">
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         className="bg-white shadow-md rounded-xl p-6 w-full max-w-lg space-y-4"
       >
@@ -69,6 +78,7 @@ export default function UploadForm() {
         <div>
           <label className="block text-sm font-medium mb-1">Price</label>
           <input
+            type="number"
             placeholder="Enter Price"
             className="w-full border rounded-lg p-2 focus:outline-blue-400"
             onChange={(e) => setForm({ ...form, price: e.target.value })}
@@ -79,6 +89,7 @@ export default function UploadForm() {
         <div>
           <label className="block text-sm font-medium mb-1">MOQ</label>
           <input
+            type="number"
             placeholder="Minimum Order Quantity"
             className="w-full border rounded-lg p-2 focus:outline-blue-400"
             onChange={(e) => setForm({ ...form, moq: e.target.value })}
@@ -109,12 +120,19 @@ export default function UploadForm() {
         <div>
           <label className="block text-sm font-medium mb-1">Stock</label>
           <input
+            type="number"
             placeholder="Available Stock"
             className="w-full border rounded-lg p-2 focus:outline-blue-400"
             onChange={(e) => setForm({ ...form, stock: e.target.value })}
             required
           />
         </div>
+        {success && (
+          <div className="flex items-center gap-2 text-green-700 bg-green-100 border border-green-300 p-2 rounded-lg">
+            <span className="text-lg">✔</span>
+            <span className="font-medium">Product uploaded successfully</span>
+          </div>
+        )}
 
         <button
           type="submit"

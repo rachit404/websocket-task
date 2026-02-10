@@ -1,7 +1,7 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import mongoose from "mongoose";
+import connectDB from "./src/db.js";
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -23,7 +23,6 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: CLIENT_URL,
-    credentials: true,
   }),
 );
 
@@ -31,30 +30,7 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // MongoDB Connection
-mongoose.connect(MONGO_URI).then(() => console.log("MongoDB Connected"));
-
-mongoose.connection.once("open", () => {
-  console.log("MongoDB connection established");
-
-  const productCollection = mongoose.connection.collection("products");
-
-  const changeStream = productCollection.watch();
-
-  changeStream.on("change", (change) => {
-    if (change.operationType === "update") {
-      console.log("Product updated:", change.documentKey._id);
-      const updatedFields = change.updateDescription.updatedFields;
-
-      // Emit event only if price OR stock changed
-      if (updatedFields.price || updatedFields.stock) {
-        io.emit("productUpdated", {
-          _id: change.documentKey._id,
-          ...updatedFields,
-        });
-      }
-    }
-  });
-});
+connectDB(MONGO_URI, io);
 
 app.use("/api/products", productRoutes(io));
 
