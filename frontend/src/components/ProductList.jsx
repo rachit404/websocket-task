@@ -4,6 +4,28 @@ import socket from "../socket";
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editValues, setEditValues] = useState({});
+
+  const updateProduct = async (id) => {
+    try {
+      await axios.put(`http://localhost:5000/api/products/${id}`, editValues);
+
+      // Clear edit mode
+      setEditingId(null);
+      setEditValues({});
+    } catch (error) {
+      alert("Failed to update product");
+    }
+  };
+
+  const startEditing = (product) => {
+    setEditingId(product._id);
+    setEditValues({
+      price: product.price,
+      stock: product.stock,
+    });
+  };
 
   useEffect(() => {
     axios
@@ -20,7 +42,20 @@ export default function ProductList() {
       );
     });
 
-    return () => socket.off("productUpdated");
+    socket.on("newProduct", (newProduct) => {
+      console.log("Received new product:", newProduct);
+      setProducts((prev) => {
+        if (!prev.find((p) => p._id === newProduct._id)) {
+          return [...prev, newProduct];
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      socket.off("productUpdated");
+      socket.off("newProduct");
+    };
   }, []);
 
   return (
@@ -57,8 +92,28 @@ export default function ProductList() {
             <div className="mt-3 bg-gray-50 rounded-lg p-3">
               <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
                 <div>
-                  <p className="text-gray-500 text-sm">Price</p>
-                  <p className="font-semibold text-gray-800">₹{p.price}</p>
+                  <p className="text-gray-500 text-sm flex items-center gap-2">
+                    Price
+                    <button
+                      onClick={() => startEditing(p)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      ✏️
+                    </button>
+                  </p>
+
+                  {editingId === p._id ? (
+                    <input
+                      type="number"
+                      className="border rounded p-1 w-full"
+                      value={editValues.price}
+                      onChange={(e) =>
+                        setEditValues({ ...editValues, price: e.target.value })
+                      }
+                    />
+                  ) : (
+                    <p className="font-semibold text-gray-800">₹{p.price}</p>
+                  )}
                 </div>
 
                 <div>
@@ -72,17 +127,45 @@ export default function ProductList() {
                 </div>
 
                 <div>
-                  <p className="text-gray-500 text-sm">Stock</p>
-                  <p
-                    className={`font-bold ${
-                      p.stock > 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {p.stock}
+                  <p className="text-gray-500 text-sm flex items-center gap-2">
+                    Stock
+                    <button
+                      onClick={() => startEditing(p)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      ✏️
+                    </button>
                   </p>
+
+                  {editingId === p._id ? (
+                    <input
+                      type="number"
+                      className="border rounded p-1 w-full"
+                      value={editValues.stock}
+                      onChange={(e) =>
+                        setEditValues({ ...editValues, stock: e.target.value })
+                      }
+                    />
+                  ) : (
+                    <p
+                      className={`font-bold ${
+                        p.stock > 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {p.stock}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
+            {editingId === p._id && (
+              <button
+                onClick={() => updateProduct(p._id)}
+                className="mt-3 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+              >
+                Update
+              </button>
+            )}
 
             {p.image && (
               <img

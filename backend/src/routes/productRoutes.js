@@ -45,7 +45,7 @@ export default (io) => {
       });
 
       await product.save();
-
+      io.emit("newProduct", product);
       res.json(product);
     } catch (error) {
       res.status(500).json({
@@ -61,18 +61,37 @@ export default (io) => {
     res.json(products);
   });
 
-  // Update Stock
-  router.put("/stock/:id", async (req, res) => {
-    const updated = await Product.findByIdAndUpdate(
-      req.params.id,
-      { stock: req.body.stock },
-      { new: true },
-    );
+  router.put("/:id", async (req, res) => {
+    try {
+      const { stock, price } = req.body;
+      const updateData = {};
 
-    // 🔥 EMIT SOCKET EVENT
-    io.emit("productUpdated", updated);
+      if (stock !== undefined) updateData.stock = stock;
+      if (price !== undefined) updateData.price = price;
 
-    res.json(updated);
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({
+          message: "At least one field (price or stock) must be provided",
+        });
+      }
+
+      const updated = await Product.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true },
+      );
+      if (!updated) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      io.emit("productUpdated", updated);
+
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({
+        message: "Server error",
+        error: error.message,
+      });
+    }
   });
 
   return router;
